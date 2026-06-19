@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>題庫匯入工具 · 郵局考古題</title>
+<style>
+  :root{--green:#1f7a3d;--green-d:#155e2d;--bg:#f4f6f5;--border:#d9e2dc;--muted:#6b7c72;--red:#c0392b;--amber:#b8860b}
+  *{box-sizing:border-box}
+  body{font-family:-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;background:var(--bg);color:#1d2b24;margin:0;line-height:1.6}
+  header{background:var(--green);color:#fff;padding:14px 18px;font-weight:700}
+  main{max-width:900px;margin:0 auto;padding:18px}
+  .card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.05)}
+  h1{font-size:1.1rem;margin:0 0 10px}
+  h2{font-size:1rem;margin:0 0 8px}
+  textarea{width:100%;min-height:230px;border:1px solid var(--border);border-radius:9px;padding:10px;font-family:ui-monospace,Consolas,monospace;font-size:.9rem}
+  .tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .tab{padding:8px 14px;border:1px solid var(--border);background:#fff;border-radius:20px;cursor:pointer;font-weight:600}
+  .tab.active{background:var(--green);color:#fff;border-color:var(--green)}
+  .btn{background:var(--green);color:#fff;border:none;padding:10px 16px;border-radius:9px;font-weight:600;cursor:pointer;font-size:.95rem}
+  .btn:hover{background:var(--green-d)}
+  .btn.secondary{background:#fff;color:var(--green);border:1px solid var(--green)}
+  .btn.ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+  .btn-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+  .muted{color:var(--muted)}.small{font-size:.85rem}
+  pre{background:#0f1f17;color:#d7f5e0;padding:14px;border-radius:9px;overflow:auto;max-height:340px;font-size:.82rem}
+  code{background:#eef3f0;padding:1px 5px;border-radius:4px}
+  .ok{color:var(--green-d);font-weight:600}.err{color:var(--red);font-weight:600}
+  .warn{color:var(--amber)}
+  details{margin-top:8px}summary{cursor:pointer;font-weight:600}
+  table{border-collapse:collapse;width:100%;font-size:.82rem;margin-top:6px}
+  th,td{border:1px solid var(--border);padding:4px 7px;text-align:left}
+  th{background:#eef3f0}
+  select{padding:8px;border:1px solid var(--border);border-radius:8px}
+</style>
+</head>
+<body>
+<header>📥 題庫匯入工具　<span style="font-weight:400;opacity:.85">把題目轉成 data/questions.js</span></header>
+<main>
+
+<div class="card">
+  <h1>使用方式</h1>
+  <ol class="small muted" style="margin:0;padding-left:20px">
+    <li>用下面兩種格式之一貼上題目（可分多次貼、累積）。</li>
+    <li>按「解析」，確認下方預覽沒問題。</li>
+    <li>按「產生並下載 questions.js」，把下載的檔案覆蓋到 <code>data/questions.js</code>。</li>
+  </ol>
+  <p class="small warn" style="margin:8px 0 0">⚠️ 下載的檔案會包含「原本題庫 ＋ 新題目」。會自動產生不重複的 id。</p>
+</div>
+
+<div class="card">
+  <div class="tabs">
+    <div class="tab active" data-mode="text">純文字格式</div>
+    <div class="tab" data-mode="tsv">Excel／試算表（貼上）</div>
+  </div>
+
+  <div id="help-text">
+    <h2>純文字格式</h2>
+    <p class="small muted">每題之間用一行 <code>---</code> 分隔。欄位名稱中英皆可。範例：</p>
+    <details><summary>看格式範例（可直接複製試用）</summary>
+<pre>科目: 國文
+年度: 113
+題目: 下列「」中的字，何者讀音正確？
+A. 綺麗：ㄑㄧˇ
+B. 迤邐：一ˊ
+C. 悽愴：ㄒㄧ
+D. 焚膏：ㄈㄣ
+答案: A
+詳解: 「綺」讀作 ㄑㄧˇ。
+---
+科目: 英文
+年度: 113
+題目: The new policy will ______ next month.
+A. take effect
+B. take place of
+C. take after
+D. take up
+答案: A
+詳解: take effect = 生效。</pre>
+    </details>
+  </div>
+
+  <div id="help-tsv" style="display:none">
+    <h2>Excel／試算表格式</h2>
+    <p class="small muted">在 Excel 框選資料 → 複製 → 貼到下面。欄位順序（用 Tab 分隔，可含標題列）：</p>
+    <table>
+      <tr><th>科目</th><th>年度</th><th>題目</th><th>選項A</th><th>選項B</th><th>選項C</th><th>選項D</th><th>答案</th><th>詳解</th></tr>
+      <tr><td>國文</td><td>113</td><td>題幹…</td><td>…</td><td>…</td><td>…</td><td>…</td><td>A</td><td>…</td></tr>
+    </table>
+    <p class="small muted" style="margin-top:6px">答案可填 <code>A/B/C/D</code> 或 <code>1/2/3/4</code>。詳解可留空。</p>
+  </div>
+
+  <textarea id="input" placeholder="在此貼上題目…"></textarea>
+
+  <div class="field small" style="margin-top:10px">
+    預設科目（當某題沒寫科目時使用）：
+    <select id="defaultSubject"></select>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn" id="parseBtn">解析</button>
+    <button class="btn secondary" id="downloadBtn" disabled>產生並下載 questions.js</button>
+    <button class="btn ghost" id="clearBtn">清空輸入</button>
+  </div>
+</div>
+
+<div class="card" id="resultCard" style="display:none">
+  <h2>解析結果</h2>
+  <div id="summary"></div>
+  <div id="errors"></div>
+  <details open><summary>新題目預覽（產生的 JS）</summary><pre id="preview"></pre></details>
+</div>
+
+</main>
+
+<!-- 載入現有題庫以便合併 -->
+<script src="data/questions.js"></script>
+<script>
+(function(){
+  "use strict";
+  const BANK = window.QUESTION_BANK || {subjects:[],questions:[]};
+  const SUBJECTS = BANK.subjects;
+  const existing = BANK.questions || [];
+  let mode = "text";
+  let parsed = [];
+
+  // 科目下拉
+  const dsel = document.getElementById("defaultSubject");
+  SUBJECTS.forEach(s=>{const o=document.createElement("option");o.value=s.id;o.textContent=s.name;dsel.appendChild(o);});
+
+  // 科目比對：接受 id 或名稱（部分相符）
+  function resolveSubject(raw){
+    if(!raw) return null;
+    const t = String(raw).trim().toLowerCase();
+    let m = SUBJECTS.find(s=>s.id.toLowerCase()===t);
+    if(m) return m.id;
+    m = SUBJECTS.find(s=>s.name.toLowerCase()===t);
+    if(m) return m.id;
+    m = SUBJECTS.find(s=>s.name.includes(raw.trim())||raw.trim().includes(s.name));
+    if(m) return m.id;
+    // 關鍵字
+    const kw=[["國文","chinese"],["英文","english"],["企業","management"],["管理","management"],["商業書信","management"],["郵政","postal"],["金融","postal"]];
+    for(const [k,id] of kw){ if(raw.includes(k)) return id; }
+    return null;
+  }
+  function parseAnswer(raw,optCount){
+    if(raw==null) return -1;
+    const t=String(raw).trim().toUpperCase();
+    const letters="ABCDEF";
+    if(letters.includes(t)) return letters.indexOf(t);
+    const n=parseInt(t,10);
+    if(!isNaN(n)&&n>=1&&n<=optCount) return n-1;
+    return -1;
+  }
+
+  // 產生不重複 id
+  const usedIds=new Set(existing.map(q=>q.id));
+  function genId(subject){
+    const prefix={chinese:"ch",english:"en",management:"mg",postal:"po"}[subject]||subject.slice(0,2);
+    let n=1,id;
+    do{ id=prefix+"-"+String(n).padStart(3,"0"); n++; }while(usedIds.has(id));
+    usedIds.add(id); return id;
+  }
+
+  function parseText(src){
+    const blocks=src.split(/^\s*---\s*$/m).map(b=>b.trim()).filter(Boolean);
+    const out=[],errs=[];
+    blocks.forEach((blk,bi)=>{
+      const lines=blk.split(/\r?\n/);
+      let subject=null,year="",stem="",expl="",ans=null;const opts=[];
+      lines.forEach(line=>{
+        let m;
+        if(m=line.match(/^\s*(科目|subject)\s*[:：]\s*(.+)$/i)){subject=m[2];}
+        else if(m=line.match(/^\s*(年度|年份|year)\s*[:：]\s*(.+)$/i)){year=m[2].trim();}
+        else if(m=line.match(/^\s*(題目|題幹|stem|q)\s*[:：]\s*(.+)$/i)){stem=m[2].trim();}
+        else if(m=line.match(/^\s*(答案|answer|ans)\s*[:：]\s*(.+)$/i)){ans=m[2].trim();}
+        else if(m=line.match(/^\s*(詳解|解析|說明|explanation)\s*[:：]\s*(.*)$/i)){expl=m[2].trim();}
+        else if(m=line.match(/^\s*([A-Fa-f])[\.\)、,]\s*(.+)$/)){opts.push(m[2].trim());}
+        else if(stem&&!/[:：]/.test(line)&&line.trim()&&opts.length===0){stem+="\n"+line.trim();}
+      });
+      const sid=resolveSubject(subject)||dsel.value;
+      const ai=parseAnswer(ans,opts.length);
+      if(!stem){errs.push(`第 ${bi+1} 段：找不到「題目」`);return;}
+      if(opts.length<2){errs.push(`第 ${bi+1} 段：選項少於 2 個`);return;}
+      if(ai<0){errs.push(`第 ${bi+1} 段（${stem.slice(0,16)}…）：答案無法判讀（「${ans}」）`);return;}
+      out.push({id:genId(sid),subject:sid,year:/^\d+$/.test(year)?parseInt(year,10):(year||"範例"),stem,options:opts,answer:ai,explanation:expl});
+    });
+    return {out,errs};
+  }
+
+  function parseTSV(src){
+    const rows=src.split(/\r?\n/).map(r=>r.split("\t")).filter(r=>r.some(c=>c.trim()));
+    const out=[],errs=[];
+    let start=0;
+    if(rows[0]&&/科目|subject/i.test(rows[0][0])) start=1; // 略過標題列
+    for(let i=start;i<rows.length;i++){
+      const r=rows[i].map(c=>(c||"").trim());
+      const [subj,year,stem,a,b,c,d,ans,expl]=r;
+      const opts=[a,b,c,d].filter(x=>x);
+      const sid=resolveSubject(subj)||dsel.value;
+      const ai=parseAnswer(ans,opts.length);
+      if(!stem){errs.push(`第 ${i+1} 列：缺題目`);continue;}
+      if(opts.length<2){errs.push(`第 ${i+1} 列：選項少於 2 個`);continue;}
+      if(ai<0){errs.push(`第 ${i+1} 列：答案無法判讀（「${ans}」）`);continue;}
+      out.push({id:genId(sid),subject:sid,year:/^\d+$/.test(year)?parseInt(year,10):(year||"範例"),stem,options:opts,answer:ai,explanation:expl||""});
+    }
+    return {out,errs};
+  }
+
+  function jsLiteral(q){
+    const arr=JSON.stringify(q.options);
+    return `    {\n      id: ${JSON.stringify(q.id)}, subject: ${JSON.stringify(q.subject)}, year: ${typeof q.year==="number"?q.year:JSON.stringify(q.year)},\n      stem: ${JSON.stringify(q.stem)},\n      options: ${arr},\n      answer: ${q.answer},\n      explanation: ${JSON.stringify(q.explanation||"")}\n    }`;
+  }
+
+  function doParse(){
+    // 每次解析重置 id 池
+    usedIds.clear(); existing.forEach(q=>usedIds.add(q.id));
+    const src=document.getElementById("input").value;
+    const res=mode==="text"?parseText(src):parseTSV(src);
+    parsed=res.out;
+    document.getElementById("resultCard").style.display="block";
+    const sumEl=document.getElementById("summary");
+    const cnt={};parsed.forEach(q=>cnt[q.subject]=(cnt[q.subject]||0)+1);
+    const bySubj=Object.entries(cnt).map(([k,v])=>{const n=(SUBJECTS.find(s=>s.id===k)||{}).name||k;return `${n}：${v}`}).join("　");
+    sumEl.innerHTML=`<span class="${parsed.length?'ok':'err'}">成功解析 ${parsed.length} 題</span>　<span class="small muted">${bySubj}</span><br><span class="small muted">合併後題庫總數：${existing.length} ＋ ${parsed.length} ＝ ${existing.length+parsed.length} 題</span>`;
+    const errEl=document.getElementById("errors");
+    errEl.innerHTML=res.errs.length?`<div class="err small" style="margin-top:8px">⚠️ ${res.errs.length} 個問題：<br>`+res.errs.map(e=>"・"+e).join("<br>")+"</div>":"";
+    document.getElementById("preview").textContent=parsed.length?parsed.map(jsLiteral).join(",\n"):"（沒有可預覽的題目）";
+    document.getElementById("downloadBtn").disabled=!parsed.length;
+  }
+
+  function buildFile(){
+    const all=existing.concat(parsed);
+    const header=`/* =============================================================\n   郵局考古題網站 — 題庫資料（由匯入工具產生）\n   共 ${all.length} 題。answer 為選項索引：A=0,B=1,C=2,D=3。\n   ============================================================= */\n\nwindow.QUESTION_BANK = {\n\n  subjects: ${JSON.stringify(SUBJECTS,null,2).replace(/\n/g,"\n  ")},\n\n  questions: [\n`;
+    const body=all.map(jsLiteral).join(",\n");
+    return header+body+"\n  ]\n};\n";
+  }
+
+  function download(){
+    const blob=new Blob([buildFile()],{type:"text/javascript;charset=utf-8"});
+    const a=document.createElement("a");
+    a.href=URL.createObjectURL(blob);a.download="questions.js";a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  }
+
+  document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+    document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+    t.classList.add("active");mode=t.dataset.mode;
+    document.getElementById("help-text").style.display=mode==="text"?"block":"none";
+    document.getElementById("help-tsv").style.display=mode==="tsv"?"block":"none";
+  }));
+  document.getElementById("parseBtn").addEventListener("click",doParse);
+  document.getElementById("downloadBtn").addEventListener("click",download);
+  document.getElementById("clearBtn").addEventListener("click",()=>{document.getElementById("input").value="";document.getElementById("resultCard").style.display="none";});
+})();
+</script>
+</body>
+</html>
